@@ -5,8 +5,8 @@ import os
 import sys
 
 # Configuration for the SSH server
-HOST = "0.0.0.0"  # Listen on all available interfaces
-PORT = 2223      # Using a non-standard port to avoid conflicts with system SSH
+# Change this to a file path for the Unix socket
+UNIX_SOCKET_PATH = "/home/tanjim/paramiko_ssh.sock"
 HOST_KEY_PATH = "test_rsa.key" # Path for a generated host key
 
 class ParamikoServer(paramiko.ServerInterface):
@@ -23,7 +23,6 @@ class ParamikoServer(paramiko.ServerInterface):
         Allows authentication without a password or key.
         """
         print(f"Authentication attempt with 'none' method for user: {username}")
-        # For a public server, we succeed 'none' authentication for any username
         return paramiko.AUTH_SUCCESSFUL
 
     def check_channel_request(self, kind, chanid):
@@ -44,11 +43,9 @@ class ParamikoServer(paramiko.ServerInterface):
         print(f"  Terminal size (chars): {width}x{height}")
         print(f"  Terminal size (pixels): {pixelwidth}x{pixelheight}")
         
-        # Store the dimensions to be sent back to the client
         self.terminal_width = width
         self.terminal_height = height
         
-        # Grant the PTY request
         return True
 
     def check_channel_shell_request(self, channel):
@@ -56,18 +53,16 @@ class ParamikoServer(paramiko.ServerInterface):
         Grants a shell request.
         """
         print(f"Shell requested for channel {channel.get_id()}")
-        self.event.set() # Signal that a shell has been requested
+        self.event.set() 
         return True
 
     def check_channel_exec_request(self, channel, command):
         """
         Handles execute command requests.
-        For simplicity, this server only reports if a PTY was involved.
         """
         print(f"Exec request for channel {channel.get_id()}: command='{command}'")
         channel.send(f"This server received an exec command: '{command.decode('utf-8')}'\n")
         
-        # For exec requests, a PTY is often not requested, so terminal size might be 'N/A'
         if self.terminal_width != 'N/A':
              channel.send(f"Previously requested PTY size (if any): {self.terminal_width}x{self.terminal_height} characters.\n")
         else:
@@ -107,7 +102,6 @@ def handle_client(client_socket):
     """
     transport = paramiko.Transport(client_socket)
     
-    # Load the host key
     try:
         host_key = paramiko.RSAKey(filename=HOST_KEY_PATH)
         transport.add_server_key(host_key)
@@ -119,8 +113,7 @@ def handle_client(client_socket):
     try:
         transport.start_server(server=server)
         
-        # Wait for a channel to be opened by the client (e.g., for a shell or exec request)
-        channel = transport.accept(20) # 20-second timeout
+        channel = transport.accept(20)
         
         if channel is None:
             print("Client did not open a channel within 20 seconds.")
@@ -128,11 +121,9 @@ def handle_client(client_socket):
 
         print(f"Client opened channel: {channel.get_id()}")
         
-        # If a shell was requested, wait for the PTY and shell requests to be processed
-        server.event.wait(10) # 10-second timeout for shell request
+        server.event.wait(10)
         
-        # Send the terminal size back to the client for interactive sessions
-        if server.event.is_set(): # Only for interactive shells where PTY is usually requested
+        if server.event.is_set():
             width = server.terminal_width
             height = server.terminal_height
             
@@ -140,7 +131,6 @@ def handle_client(client_socket):
             channel.send(f"Your terminal size is: {width}x{height} characters.\r\n")
             channel.send("Type 'exit' to disconnect.\r\n")
 
-            # Basic interactive shell functionality
             while True:
                 try:
                     data = channel.recv(1024)
@@ -153,9 +143,9 @@ def handle_client(client_socket):
                         break
                     elif command:
                         channel.send(f"You typed: {command}\r\n")
-                    channel.send("$ ") # Simple prompt
+                    channel.send("$ ")
                 except EOFError:
-                    break # Client disconnected
+                    break
         
     except paramiko.SSHException as e:
         print(f"SSH negotiation failed: {e}", file=sys.stderr)
@@ -169,19 +159,30 @@ def main():
     """
     Main function to start the SSH server.
     """
-    generate_host_key() # Ensure a host key exists
+    generate_host_key()
     
+    # Clean up old socket file if it exists
+    if os.path.exists(UNIX_SOCKET_PATH):
+        try:
+            os.remove(UNIX_SOCKET_PATH)
+            print(f"Removed old Unix socket: {UNIX_SOCKET_PATH}")
+        except OSError as e:
+            print(f"Error removing old Unix socket {UNIX_SOCKET_PATH}: {e}", file=sys.stderr)
+            sys.exit(1)
+
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((HOST, PORT))
+        # Create a Unix domain socket
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(UNIX_SOCKET_PATH)
         sock.listen(5)
-        print(f"Listening for incoming connections on {HOST}:{PORT}...")
+        print(f"Listening for incoming connections on Unix socket: {UNIX_SOCKET_PATH}")
+
+        # Ensure proper permissions on the socket file (optional, but good for security)
+        # os.chmod(UNIX_SOCKET_PATH, 0o660) # Read/write for owner and group
 
         while True:
             conn, addr = sock.accept()
-            print(f"Accepted connection from {addr}")
-            # Start a new thread to handle each client
+            print(f"Accepted connection on Unix socket.")
             client_thread = threading.Thread(target=handle_client, args=(conn,))
             client_thread.start()
 
@@ -189,6 +190,13 @@ def main():
         print(f"Server error: {e}", file=sys.stderr)
     finally:
         sock.close()
+        # It's good practice to remove the socket file when the server shuts down gracefully
+        if os.path.exists(UNIX_SOCKET_PATH):
+            try:
+                os.remove(UNIX_SOCKET_PATH)
+                print(f"Removed Unix socket: {UNIX_SOCKET_PATH}")
+            except OSError as e:
+                print(f"Error removing Unix socket on shutdown {UNIX_SOCKET_PATH}: {e}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,7 @@ import sys
 
 # Configuration for the SSH server
 HOST = "0.0.0.0"  # Listen on all available interfaces
-PORT = 2222      # Using a non-standard port to avoid conflicts with system SSH
+PORT = 2223      # Using a non-standard port to avoid conflicts with system SSH
 HOST_KEY_PATH = "test_rsa.key" # Path for a generated host key
 
 class ParamikoServer(paramiko.ServerInterface):

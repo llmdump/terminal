@@ -259,7 +259,7 @@ Use the following syntax:
 Type [b] to bold, [c] to highlight as blue, and [r] to reset.
 Use the following syntax for other colors:
 [red], [green], [yellow], [blue], [magenta], [cyan]
-These are not HTML tags, so NEVER end them with [/c], [/b], [/red], etc. Close them with [r]. Example: 
+These are not HTML tags, so NEVER end them with [/c], [/b], [/red], etc. Close them with [r]. Make sure you do not put spaces or extra characters. For example, [ r] is invalid. Example:
 [c]Artificial Intelligence (AI)[r] is a branch of computer science that creates systems capable of tasks that normally require human intelligence—such as learning, reasoning, problem-solving, perception, and language ...
 For code snippets, type [Language code] at the start, replacing Language with the actual language name, and [End of code] at the end.
 You will have to manually syntax highlight the code. Example:

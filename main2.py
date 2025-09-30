@@ -21,10 +21,10 @@ dump_color="\x1b[1;38;2;71;82;109;49m"
 reset_color="\x1b[0;39;49m".encode()
 starter_color="\x1b[0;38;2;76;200;229;49m".encode()
 print("Loading logo.txt...")
-with open("logo.txt") as f:
+with open("/home/tanjim/terminal/logo.txt") as f:
     raw_logo=f.read()
 print("Loading logo.json...")
-with open("logo.json") as f:
+with open("/home/tanjim/terminal/logo.json") as f:
     sections=json.load(f).get("sections", [])
 logo=""
 for i in raw_logo.split("\n"):

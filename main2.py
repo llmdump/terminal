@@ -4,7 +4,7 @@ import json
 import colorama
 import math
 colorama.init(autoreset=True)
-print("Setting up server...")
+print("Setting up LLMDump server...")
 start=(105, 120, 250)
 end=(76, 200, 229)
 def get_gradient(steps,n):
@@ -21,11 +21,20 @@ dump_color="\x1b[1;38;2;71;82;109;49m"
 reset_color="\x1b[0;39;49m".encode()
 starter_color="\x1b[0;38;2;76;200;229;49m".encode()
 print("Loading logo.txt...")
-with open("/home/tanjim/terminal/logo.txt") as f:
-    raw_logo=f.read()
-print("Loading logo.json...")
-with open("/home/tanjim/terminal/logo.json") as f:
-    sections=json.load(f).get("sections", [])
+try:
+    with open("/home/tanjim/terminal/logo.txt") as f:
+        raw_logo=f.read()
+    print("Loading logo.json...")
+    with open("/home/tanjim/terminal/logo.json") as f:
+        sections=json.load(f).get("sections", [])
+except:
+    with open("logo.txt") as f:
+        raw_logo=f.read()
+    print("Loading logo.json...")
+    with open("logo.json") as f:
+        sections=json.load(f).get("sections", [])
+print("Logo files loaded.")
+print("Generating logo...")
 logo=""
 for i in raw_logo.split("\n"):
     for index,j in enumerate(i):
@@ -33,10 +42,11 @@ for i in raw_logo.split("\n"):
     logo+="\r\n"+reset_color.decode()
 
 print(logo)
+print("Logo loaded.")
 print("Starting server...")
 
 # define some functions for AI stuff
-def chat_ai(messages:list[dict]): #[{"role": "user", "content": "Tell me a joke!"}]
+def chat_ai(messages:list[dict],color_available:bool=True): #[{"role": "user", "content": "Tell me a joke!"}]
     url = "https://ai.hackclub.com/chat/completions"
     headers = {"Content-Type": "application/json"}
     data = {"messages": messages,"model":"openai/gpt-oss-120b"}
@@ -45,21 +55,37 @@ def chat_ai(messages:list[dict]): #[{"role": "user", "content": "Tell me a joke!
     response:requests.Response = requests.post(url, headers=headers, json=data)
     res_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
     print(res_text)
-    # Replace tags with colorama codes
-    color_map = {
-        "[c]": colorama.Fore.BLUE,
-        "[blue]": colorama.Fore.BLUE,
-        "[red]": colorama.Fore.RED,
-        "[green]": colorama.Fore.GREEN,
-        "[yellow]": colorama.Fore.YELLOW,
-        "[magenta]": colorama.Fore.MAGENTA,
-        "[cyan]": colorama.Fore.CYAN,
-        "[white]": colorama.Fore.WHITE,
-        "[black]": colorama.Fore.BLACK,
-    }
+    if color_available:
+        # Replace tags with colorama codes
+        color_map = {
+            "[c]": colorama.Fore.BLUE,
+            "[blue]": colorama.Fore.BLUE,
+            "[red]": colorama.Fore.RED,
+            "[green]": colorama.Fore.GREEN,
+            "[yellow]": colorama.Fore.YELLOW,
+            "[magenta]": colorama.Fore.MAGENTA,
+            "[cyan]": colorama.Fore.CYAN,
+            "[white]": colorama.Fore.WHITE,
+            "[black]": colorama.Fore.BLACK,
+        }
+    else:
+        color_map = {
+            "[c]": "",
+            "[blue]": "",
+            "[red]": "",
+            "[green]": "",
+            "[yellow]": "",
+            "[magenta]": "",
+            "[cyan]": "",
+            "[white]": "",
+            "[black]": "",
+        }
     for tag, color in color_map.items():
         res_text = res_text.replace(tag, color)
-    res_text = res_text.replace("[b]", colorama.Style.BRIGHT).replace("[r]", colorama.Style.RESET_ALL)
+    if color_available:
+        res_text = res_text.replace("[b]", colorama.Style.BRIGHT).replace("[r]", colorama.Style.RESET_ALL)
+    else:
+        res_text = res_text.replace("[b]", "").replace("[r]", "")
     res_text = res_text.replace("\n", "\r\n") + "\r\n"
     res_text = res_text.encode('utf-8')
     msgs=messages+[{"role": "assistant", "content": response.json().get("choices", [{}])[0].get("message", {}).get("content", "")}]
@@ -321,6 +347,7 @@ Make sure to align the columns properly for better readability. Note that when a
         """
         Called when the connection is established.
         """
+        
         self.transport.write(logo.encode('utf-8'))
         self.transport.write(starter_color+b"Welcome to LLM Dump in the terminal!\r\n")
         self.transport.write(b"Type something and hit enter, or Ctrl+D or Ctrl+Z to exit.\r\n")

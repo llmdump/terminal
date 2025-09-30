@@ -259,7 +259,7 @@ Use the following syntax:
 Type [b] to bold, [c] to highlight as blue, and [r] to reset.
 Use the following syntax for other colors:
 [red], [green], [yellow], [blue], [magenta], [cyan]
-These are not HTML tags, so NEVER end them with [/c], [/b], [/red], etc. Close them with [r]. Make sure you do not put spaces or extra characters. For example, [ r] is invalid. Example:
+These are not HTML tags, so NEVER end them with [/c], [/b], [/red], etc. Close them with [r]. Make sure you do not put spaces or extra characters. For example, [ r] is invalid. Also, there is no need to put spaces before or after the tags. Example:
 [c]Artificial Intelligence (AI)[r] is a branch of computer science that creates systems capable of tasks that normally require human intelligence—such as learning, reasoning, problem-solving, perception, and language ...
 For code snippets, type [Language code] at the start, replacing Language with the actual language name, and [End of code] at the end.
 You will have to manually syntax highlight the code. Example:
@@ -279,7 +279,43 @@ Class names: [b][yellow] which bolds the text
 Brackets and parentheses: [blue]
 Comments: [magenta]
 Reset all formatting after the code snippet with [r].
+Make sure to not put spaces or extra characters in the tags. Wrong examples:
+[Python code]
+[red]def[/red] hello_world()[r]: # Invalid, do not use [/red]
+    [red]import[blue] PyQt5[red].[blue] QtWidgets[r] # Invalid, but this is more subtle
+    # The above had a space between [blue] and QtWidgets, which renders ad the following:
+    # import PyQt5. QtWidgets
+    [red] import [blue] PyQt5 [red] . [blue] QtWidgets [r]
+    # The above had spaces between the tags and the text, which renders as:
+    #  import  PyQt5  .  QtWidgets
+[End of code]
+Inconsistencies in formatting make it harder to read code, but it can also cause problems when the user copies and pastes the code.
+Correctly formatted code CAN be copy-pasted directly into a code editor and it will work without any issues.
+For general text formatting, use mainly [b], [c], and [r]. Use other colors only when necessary to highlight specific words or phrases.
+For lists, use hyphens or asterisks or numbers, like this:
+[green]-[r] Item 1
+[green]-[r] Item 2
+[green]-[r] Item 3
+or
+[green]1.[r] Item 1
+[green]2.[r] Item 2
+[green]3.[r] Item 3
+For headings, use the following formats:
 
+[b][green]
+Heading 1
+=========[r]
+[cyan]
+Heading 2
+---------[r]
+[yellow]Heading 3 and above[r]
+
+For tables, use hyphens and pipes, similar to Markdown, like this:
+[green]| Column 1 | Column 2 | Column 3 |[r]
+[green]|----------|----------|----------|[r]
+[green]| Data 1   | Data 2   | Data 3   |[r]
+[green]| Data 4   | Data 5   | Data 6   |[r]
+Make sure to align the columns properly for better readability. Note that when aligning the columns, remember that the color tags do not take up any space.
 """ }]  # To store conversation history per user
     def connectionMade(self):
         """
